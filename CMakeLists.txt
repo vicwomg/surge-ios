@@ -1,5 +1,15 @@
 # vi:set sw=2 et:
 cmake_minimum_required(VERSION 3.15)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  message(STATUS "Configuring for iOS build...")
+  set(SURGE_BUILD_TESTRUNNER OFF CACHE BOOL "Build Surge unit test runner" FORCE)
+  set(SURGE_SKIP_VST3 ON CACHE BOOL "Skip VST3 build" FORCE)
+  set(SURGE_BUILD_CLAP OFF CACHE BOOL "Build Surge XT as a CLAP" FORCE)
+  set(SURGE_BUILD_LV2 OFF CACHE BOOL "Build Surge XT as an LV2" FORCE)
+  set(SURGE_XT_BUILD_AUV3 ON CACHE BOOL "Build Surge XT as an AUv3" FORCE)
+  set(SURGE_SKIP_WERROR ON CACHE BOOL "Skip warnings as errors on iOS" FORCE)
+endif()
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "Minimum macOS version")

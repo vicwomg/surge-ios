@@ -417,10 +417,15 @@ SurgeGUIEditor::SurgeGUIEditor(SurgeSynthEditor *jEd, SurgeSynthesizer *synth)
         float baseW = getWindowSizeX();
         float baseH = getWindowSizeY();
 
+#if JUCE_IOS
+        int maxScreenUsage = 100;
+        auto correctedZf =
+            findLargestFittingZoomBetween(minimumZoom, 250.0, 5, maxScreenUsage, baseW, baseH);
+#else
         int maxScreenUsage = 70;
-
         auto correctedZf =
             findLargestFittingZoomBetween(100.0, 250.0, 25, maxScreenUsage, baseW, baseH);
+#endif
 
         /*
          * If there's nothing, probably a fresh install but may be no default. So be careful if
@@ -3030,7 +3035,7 @@ void SurgeGUIEditor::tuningChanged()
 
 bool SurgeGUIEditor::doesZoomFitToScreen(float zf, float &correctedZf)
 {
-#if !LINUX
+#if !LINUX && !JUCE_IOS
     correctedZf = zf;
     return true;
 #endif
@@ -3046,13 +3051,26 @@ bool SurgeGUIEditor::doesZoomFitToScreen(float zf, float &correctedZf)
     ** Keep these as integers to be consistent with the other zoom factors, and to make
     ** the error message cleaner.
     */
+#if JUCE_IOS
+    int maxScreenUsage = 100;
+#else
     int maxScreenUsage = 90;
+#endif
 
     /*
     ** In the startup path we may not have a clean window yet to give us a trustworthy
     ** screen dimension; so allow callers to suppress this check with an optional
     ** variable and set it only in the constructor of SurgeGUIEditor
     */
+#if JUCE_IOS
+    if (screenDim.getHeight() > 0 && screenDim.getWidth() > 0 &&
+        ((baseW * zf / 100.0) > maxScreenUsage * screenDim.getWidth() / 100.0 ||
+         (baseH * zf / 100.0) > maxScreenUsage * screenDim.getHeight() / 100.0))
+    {
+        correctedZf = findLargestFittingZoomBetween(minimumZoom, zf, 5, maxScreenUsage, baseW, baseH);
+        return false;
+    }
+#else
     if (zf != 100.0 && zf > 100 && screenDim.getHeight() > 0 && screenDim.getWidth() > 0 &&
         ((baseW * zf / 100.0) > maxScreenUsage * screenDim.getWidth() / 100.0 ||
          (baseH * zf / 100.0) > maxScreenUsage * screenDim.getHeight() / 100.0))
@@ -3060,6 +3078,7 @@ bool SurgeGUIEditor::doesZoomFitToScreen(float zf, float &correctedZf)
         correctedZf = findLargestFittingZoomBetween(100.0, zf, 5, maxScreenUsage, baseW, baseH);
         return false;
     }
+#endif
     else
     {
         correctedZf = zf;

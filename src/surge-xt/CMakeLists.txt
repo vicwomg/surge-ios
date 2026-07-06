@@ -247,9 +247,11 @@ target_include_directories(${PROJECT_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_subdirectory(cli)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  add_subdirectory(cli)
+endif()
 
-if(APPLE)
+if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
   add_dependencies(${PROJECT_NAME}_Standalone ${PROJECT_NAME}-cli)
   get_property(cliname TARGET ${PROJECT_NAME}-cli PROPERTY RUNTIME_OUTPUT_DIRECTORY)
   get_property(saname TARGET ${PROJECT_NAME}_Standalone PROPERTY RUNTIME_OUTPUT_DIRECTORY)

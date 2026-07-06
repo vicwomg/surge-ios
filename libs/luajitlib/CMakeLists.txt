@@ -7,10 +7,15 @@ set(LUAJIT_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/LuaJIT")
 set(LUAJIT_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/LuaJIT/include")
 
 # Define library filename based on platform
-if(WIN32 AND NOT MINGW)
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  set(LUAJIT_LIBRARY "${LUAJIT_BUILD_DIR}/bin/\$(PLATFORM_NAME)/libluajit.a")
+  set(LUAJIT_CHECK_FILE "${LUAJIT_BUILD_DIR}/bin/iphoneos/libluajit.a")
+elseif(WIN32 AND NOT MINGW)
   set(LUAJIT_LIBRARY "${LUAJIT_BUILD_DIR}/bin/lua51.lib")
+  set(LUAJIT_CHECK_FILE "${LUAJIT_LIBRARY}")
 else()
   set(LUAJIT_LIBRARY "${LUAJIT_BUILD_DIR}/bin/libluajit.a")
+  set(LUAJIT_CHECK_FILE "${LUAJIT_LIBRARY}")
 endif()
 
 # Load cmake-FindVcvars
@@ -48,10 +53,17 @@ function(handle_error message)
 endfunction()
 
 # Build LuaJIT if existing library is not found
-if(NOT EXISTS "${LUAJIT_LIBRARY}")
+if(NOT EXISTS "${LUAJIT_CHECK_FILE}")
   message(STATUS "Building LuaJIT at CMake time right now; configure with -DSURGE_SKIP_LUA=TRUE to disable")
   # Check APPLE before UNIX
-  if(APPLE)
+  if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    message(STATUS "Running ./build-ios-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
+    execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+      COMMAND ./build-ios-luajit.sh "${LUAJIT_BUILD_DIR}"
+      RESULT_VARIABLE LUAJIT_RESULT
+      OUTPUT_VARIABLE LUAJIT_OUTPUT
+      ERROR_VARIABLE LUAJIT_ERROR)
+  elseif(APPLE)
     message(STATUS "Running ./build-macos-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
     execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
       COMMAND ./build-macos-luajit.sh "${LUAJIT_BUILD_DIR}"
@@ -91,7 +103,7 @@ if(NOT EXISTS "${LUAJIT_LIBRARY}")
   endif()
 
   # If we don't have a library at this point the build script failed silently
-  if(NOT EXISTS "${LUAJIT_LIBRARY}")
+  if(NOT EXISTS "${LUAJIT_CHECK_FILE}")
     handle_error("Failed to build LuaJIT: Library not found after build attempt!")
   endif()
 
