@@ -268,6 +268,11 @@ if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  if(TARGET ${PROJECT_NAME}_Standalone)
+    target_sources(${PROJECT_NAME}_Standalone PRIVATE SurgeStandaloneApp_ios.cpp)
+    target_compile_definitions(${PROJECT_NAME}_Standalone PRIVATE JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1)
+  endif()
+
   foreach(fmt Standalone AUv3)
     if(TARGET ${PROJECT_NAME}_${fmt})
       add_custom_command(

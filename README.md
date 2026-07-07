@@ -247,13 +247,12 @@ To build a fat binary on a Mac, simply add the following CMake argument to your 
 ### Building for iOS
 
 Surge XT can be compiled as a standalone iOS app or AUv3 plugin!
-To successfully build for iOS, you first need to apply a few iOS-specific patches to Surge's submodules. We provide a convenient script to do this for you.
 
 To get started on a fresh clone:
 
 1. `git submodule update --init --recursive`
-2. Run `./apply_ios_patches.sh` to apply the iOS patches to JUCE and sst-plugininfra.
-3. Open the project in CMake or Xcode, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
+2. Configure the project with CMake for iOS.
+3. Open the generated project in Xcode, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
 
 When compiling for an iOS physical device, Surge will automatically bundle the factory data directory (`resources/data`) directly into the `.app` package.
 

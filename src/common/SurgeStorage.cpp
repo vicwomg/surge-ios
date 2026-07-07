@@ -57,6 +57,10 @@
 
 #include "sst/basic-blocks/mechanics/endian-ops.h"
 
+#if MAC
+#include <TargetConditionals.h>
+#endif
+
 CMRC_DECLARE(surge_common_binary);
 
 namespace mech = sst::basic_blocks::mechanics;
@@ -188,12 +192,40 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : oth
     std::string sxt = "Surge XT";
     std::string sxtlower = "surge-xt";
 
+#if MAC && (TARGET_OS_IPHONE || TARGET_OS_IOS)
+    // iOS does not expose the macOS-style Application Support locations in the way Surge expects.
+    localAppDataPath =
+        sst::plugininfra::paths::bestDocumentsVendorFolderPathFor("Surge Synth Team", "Surge XT");
+#else
     // Set up the local app data path for storing app-level config
     localAppDataPath = sst::plugininfra::paths::bestLibrarySharedVendorFolderPathFor(
         "Surge Synth Team", "Surge XT", true);
+#endif
     userDataPath = getOverridenUserPath();
 
 #if MAC
+#if TARGET_OS_IPHONE || TARGET_OS_IOS
+    if (!hasSuppliedDataPath)
+    {
+        auto shareddp =
+            sst::plugininfra::paths::sharedLibraryBinaryPath().parent_path() / "SurgeXTData";
+        auto userdp = sst::plugininfra::paths::bestDocumentsFolderPathFor(sxt);
+
+        if (fs::is_directory(userdp))
+            datapath = userdp;
+        else
+            datapath = shareddp;
+    }
+    else
+    {
+        datapath = fs::path{suppliedDataPath};
+    }
+
+    if (userDataPath.empty())
+    {
+        userDataPath = calculateStandardUserDataPath(sxt);
+    }
+#else
     if (!hasSuppliedDataPath)
     {
         auto shareddp = sst::plugininfra::paths::bestLibrarySharedFolderPathFor(sxt);
@@ -217,6 +249,7 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : oth
     // These are how I test a broken windows install for documents
     // userDataPath = fs::path{"/good/luck/bozo"};
     // userDataPath = fs::path{"/usr/sbin"};
+#endif
 #elif LINUX
     const auto installPath = sst::plugininfra::paths::sharedLibraryBinaryPath().parent_path();
 
