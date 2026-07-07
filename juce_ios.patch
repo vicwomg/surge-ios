@@ -1,0 +1,90 @@
+diff --git a/modules/juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h b/modules/juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h
+index 75e932616f..831f45d184 100644
+--- a/modules/juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h
++++ b/modules/juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h
+@@ -428,8 +428,8 @@ public:
+     Array<PluginInOuts> channelConfiguration;
+ 
+     // avoid feedback loop by default
+-    bool processorHasPotentialFeedbackLoop = true;
+-    std::atomic<bool> muteInput { true };
++    bool processorHasPotentialFeedbackLoop = false;
++    std::atomic<bool> muteInput { false };
+     Value shouldMuteInput;
+     AudioBuffer<float> emptyBuffer;
+     bool autoOpenMidiDevices;
+@@ -450,7 +450,7 @@ private:
+         processor->disableNonMainBuses();
+         processor->setRateAndBufferSizeDetails (44100, 512);
+ 
+-        processorHasPotentialFeedbackLoop = (getNumInputChannels() > 0 && getNumOutputChannels() > 0);
++        processorHasPotentialFeedbackLoop = false;
+     }
+ 
+     void handleDeletePlugin()
+@@ -475,7 +475,8 @@ private:
+                               (pluginHolder.processor.get() != nullptr && pluginHolder.processor->producesMidi()),
+                               true, false),
+               shouldMuteLabel  ("Feedback Loop:", "Feedback Loop:"),
+-              shouldMuteButton ("Mute audio input")
++              shouldMuteButton ("Mute audio input"),
++              closeButton      ("Close Settings")
+         {
+             setOpaque (true);
+ 
+@@ -483,6 +484,12 @@ private:
+             shouldMuteButton.getToggleStateValue().referTo (owner.shouldMuteInput);
+ 
+             addAndMakeVisible (deviceSelector);
++            addAndMakeVisible (closeButton);
++
++            closeButton.onClick = [this] {
++                if (auto* w = findParentComponentOfClass<DialogWindow>())
++                    w->exitModalState (0);
++            };
+ 
+             if (owner.getProcessorHasPotentialFeedbackLoop())
+             {
+@@ -504,6 +511,10 @@ private:
+ 
+             auto r = getLocalBounds();
+ 
++            // Add space for the close button at the bottom
++            auto bottomArea = r.removeFromBottom (50);
++            closeButton.setBounds (bottomArea.reduced (20, 10));
++
+             if (owner.getProcessorHasPotentialFeedbackLoop())
+             {
+                 auto itemHeight = deviceSelector.getItemHeight();
+@@ -546,6 +557,7 @@ private:
+         AudioDeviceSelectorComponent deviceSelector;
+         Label shouldMuteLabel;
+         ToggleButton shouldMuteButton;
++        TextButton closeButton;
+         bool isResizing = false;
+ 
+         //==============================================================================
+@@ -658,6 +670,10 @@ public:
+ 
+        #if JUCE_IOS || JUCE_ANDROID
+         setTitleBarHeight (0);
++        Component::addAndMakeVisible (optionsButton);
++        optionsButton.addListener (this);
++        optionsButton.setTriggeredOnMouseDown (true);
++        optionsButton.setAlwaysOnTop (true);
+        #else
+         setTitleBarButtonsRequired (DocumentWindow::minimiseButton | DocumentWindow::closeButton, false);
+ 
+@@ -807,7 +823,12 @@ public:
+     void resized() override
+     {
+         DocumentWindow::resized();
++       #if JUCE_IOS || JUCE_ANDROID
++        // Place the Options button in the upper left
++        optionsButton.setBounds (10, 10, 80, 30);
++       #else
+         optionsButton.setBounds (8, 6, 60, getTitleBarHeight() - 8);
++       #endif
+     }
+ 
+     virtual StandalonePluginHolder* getPluginHolder()    { return pluginHolder.get(); }

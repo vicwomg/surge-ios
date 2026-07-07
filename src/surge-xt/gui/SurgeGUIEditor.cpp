@@ -357,6 +357,8 @@ SurgeGUIEditor::SurgeGUIEditor(SurgeSynthEditor *jEd, SurgeSynthesizer *synth)
 {
     jassert(Surge::GUI::ModulationGrid::getModulationGrid());
 
+    juce::Desktop::getInstance().addGlobalMouseListener(&twoFingerTapDetector);
+
     assert(n_paramslots >= n_total_params);
     synth->storage.addErrorListener(this);
     synth->storage.okCancelProvider = [this](const std::string &msg, const std::string &title,
@@ -505,6 +507,7 @@ SurgeGUIEditor::~SurgeGUIEditor()
 {
     juce::PopupMenu::dismissAllActiveMenus();
     juce::Desktop::getInstance().removeFocusChangeListener(this);
+    juce::Desktop::getInstance().removeGlobalMouseListener(&twoFingerTapDetector);
     synth->removeModulationAPIListener(this);
     synth->storage.clearOkCancelProvider();
     auto isPop = synth->storage.getPatch().dawExtraState.isPopulated;

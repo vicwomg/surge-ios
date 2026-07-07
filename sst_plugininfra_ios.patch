@@ -1,0 +1,35 @@
+diff --git a/src/paths_macos.mm b/src/paths_macos.mm
+index 479a035..ea9318a 100644
+--- a/src/paths_macos.mm
++++ b/src/paths_macos.mm
+@@ -8,6 +8,7 @@
+ #include "sst/plugininfra/paths.h"
+ #include <dlfcn.h>
+ #include <Foundation/Foundation.h>
++#include <TargetConditionals.h>
+ 
+ namespace sst
+ {
+@@ -54,8 +55,22 @@
+ fs::path bestLibrarySharedVendorFolderPathFor(const std::string &vendorName, const std::string &productName, bool userLevel)
+ {
+     auto *fileManager = [NSFileManager defaultManager];
++#if TARGET_OS_IPHONE || TARGET_OS_IOS
++    if (!userLevel) {
++        NSString *resourcePath = [[NSBundle mainBundle] resourcePath];
++        if (resourcePath) {
++            // On iOS, the executable and resources share the same root folder.
++            // If the executable is "Surge XT", we cannot have a folder named "Surge XT".
++            // So we use "SurgeXTData" for the bundled factory data directory.
++            return fs::path{[resourcePath fileSystemRepresentation]} / "SurgeXTData";
++        }
++        return fs::path{};
++    }
++    auto *resultURLs = [fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
++#else
+     auto key = userLevel ? NSUserDomainMask : NSLocalDomainMask;
+     auto *resultURLs = [fileManager URLsForDirectory:NSApplicationSupportDirectory inDomains:key];
++#endif
+     if (resultURLs)
+     {
+         auto *u = [resultURLs objectAtIndex:0];

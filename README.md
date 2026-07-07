@@ -54,6 +54,7 @@ to do a build.
 
 > [!TIP]
 > To only build the VST3, replace the above final command with this:
+
 ```bash
 cmake --build build --config Release --target surge-xt_VST3
 ```
@@ -104,7 +105,7 @@ cmake --build build_vst2 --config Release --target surge-fx_VST --parallel 4
 ```
 
 You will then have VST2 plugins in `build_vst2/surge-xt_artefacts/Release/VST`
-and  `build_vst2/surge-fx_artefacts/Release/VST` respectively. Adjust the number of cores that will be used for building
+and `build_vst2/surge-fx_artefacts/Release/VST` respectively. Adjust the number of cores that will be used for building
 process by modifying the value of `--parallel` argument.
 
 ## Building with support for ASIO
@@ -243,10 +244,23 @@ To build a fat binary on a Mac, simply add the following CMake argument to your 
 -D"CMAKE_OSX_ARCHITECTURES=arm64;x86_64"
 ```
 
+### Building for iOS
+
+Surge XT can be compiled as a standalone iOS app or AUv3 plugin!
+To successfully build for iOS, you first need to apply a few iOS-specific patches to Surge's submodules. We provide a convenient script to do this for you.
+
+To get started on a fresh clone:
+
+1. `git submodule update --init --recursive`
+2. Run `./apply_ios_patches.sh` to apply the iOS patches to JUCE and sst-plugininfra.
+3. Open the project in CMake or Xcode, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
+
+When compiling for an iOS physical device, Surge will automatically bundle the factory data directory (`resources/data`) directly into the `.app` package.
+
 ### Building for Raspberry Pi
 
 Surge XT builds natively on 64-bit Raspberry Pi operating systems. Install your compiler
-toolchain and run the standard CMake commands. Surge XT will *not* build on 32-bit Raspberry Pi
+toolchain and run the standard CMake commands. Surge XT will _not_ build on 32-bit Raspberry Pi
 systems, giving an error in Spring Reverb and elsewhere in DSP code. If you would like to work
 on fixing this, see the comment in CMakeLists.txt or drop us a line on our Discord or GitHub.
 
@@ -310,11 +324,11 @@ read the associated README.
 
 You need to install the following:
 
-* Install [Git](https://git-scm.com/downloads)
-* Install [Visual Studio 2017, 2019, or later (version 15.5 or newer)](https://visualstudio.microsoft.com/downloads/)
-     * When installing Visual Studio, make sure to include CLI tools and CMake, which are included in
-  'Optional CLI support' and 'Toolset for desktop' install bundles.
-  This is normally as simple as going to Visual Studio Installer and installing 'Desktop development with C++' from the 'Workloads' tab.
+- Install [Git](https://git-scm.com/downloads)
+- Install [Visual Studio 2017, 2019, or later (version 15.5 or newer)](https://visualstudio.microsoft.com/downloads/)
+  - When installing Visual Studio, make sure to include CLI tools and CMake, which are included in
+    'Optional CLI support' and 'Toolset for desktop' install bundles.
+    This is normally as simple as going to Visual Studio Installer and installing 'Desktop development with C++' from the 'Workloads' tab.
 
 ## macOS
 
@@ -340,7 +354,7 @@ older than 7 or so and clangs after 9 or 10. You will also need to install a set
 sudo apt install build-essential git cmake libcairo-dev libxkbcommon-x11-dev libxkbcommon-dev libxcb-cursor-dev libxcb-keysyms1-dev libxcb-util-dev libxrandr-dev libxinerama-dev libxcursor-dev libasound2-dev libjack-jackd2-dev
 ```
 
-*You can find more info about Surge XT on Linux and other Unix-like distros in [this document](doc/Linux%20and%20Other%20Unix-like%20Distributions.md).*
+_You can find more info about Surge XT on Linux and other Unix-like distros in [this document](doc/Linux%20and%20Other%20Unix-like%20Distributions.md)._
 
 # Continuous Integration
 
@@ -352,5 +366,5 @@ server. We are grateful to Microsoft for providing Azure pipelines for free to t
 
 # References
 
-* Most Surge XT-related conversation happens on the Surge Synthesizer Discord server. You can join via [this link](https://discord.gg/spGANHw).
-* Discussion at [KvR](https://www.kvraudio.com) forum [here](https://www.kvraudio.com/forum/viewtopic.php?f=1&t=511922).
+- Most Surge XT-related conversation happens on the Surge Synthesizer Discord server. You can join via [this link](https://discord.gg/spGANHw).
+- Discussion at [KvR](https://www.kvraudio.com) forum [here](https://www.kvraudio.com/forum/viewtopic.php?f=1&t=511922).

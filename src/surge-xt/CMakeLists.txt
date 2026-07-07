@@ -267,6 +267,20 @@ if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
   )
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  foreach(fmt Standalone AUv3)
+    if(TARGET ${PROJECT_NAME}_${fmt})
+      add_custom_command(
+        TARGET ${PROJECT_NAME}_${fmt}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+          "${CMAKE_SOURCE_DIR}/resources/data"
+          "$<TARGET_BUNDLE_CONTENT_DIR:${PROJECT_NAME}_${fmt}>/SurgeXTData"
+      )
+    endif()
+  endforeach()
+endif()
+
 surge_juce_package(${PROJECT_NAME} "Surge XT")
 
 if (${SURGE_BUILD_TESTRUNNER})
