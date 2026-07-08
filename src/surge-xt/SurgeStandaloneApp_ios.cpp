@@ -200,8 +200,6 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
     }
 
   private:
-    std::unique_ptr<juce::Viewport> scrollViewport;
-
     // Wraps the synth content with empty padding on all sides so the user can
     // scroll slightly past every edge, making extremity controls easier to tap.
     struct PaddingWrapper : public juce::Component
@@ -227,6 +225,52 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
     };
 
     std::unique_ptr<PaddingWrapper> paddingWrapper;
+
+    struct SmartDragToScrollListener : public juce::MouseListener
+    {
+        juce::Viewport *viewport;
+        std::map<int, juce::Point<int>> lastMousePos;
+        std::map<int, bool> isDraggingTouch;
+
+        SmartDragToScrollListener(juce::Viewport *v) : viewport(v) {}
+
+        void mouseDown(const juce::MouseEvent &e) override
+        {
+            if (e.originalComponent == nullptr) return;
+
+            // In Surge, the empty background is drawn by a single "MainFrame" component.
+            // Empty margins outside the synth are handled by our "PaddingWrapper".
+            // If the user clicks on anything else, it's an interactive control (slider, etc.)
+            juce::String typeName = typeid(*(e.originalComponent)).name();
+            bool isBackground = typeName.containsIgnoreCase("MainFrame") ||
+                                typeName.containsIgnoreCase("PaddingWrapper");
+
+            isDraggingTouch[e.source.getIndex()] = isBackground;
+            lastMousePos[e.source.getIndex()] = e.getScreenPosition();
+        }
+
+        void mouseDrag(const juce::MouseEvent &e) override
+        {
+            if (isDraggingTouch[e.source.getIndex()])
+            {
+                auto currentPos = e.getScreenPosition();
+                auto delta = currentPos - lastMousePos[e.source.getIndex()];
+                lastMousePos[e.source.getIndex()] = currentPos;
+                
+                auto pos = viewport->getViewPosition();
+                viewport->setViewPosition(pos.x - delta.x, pos.y - delta.y);
+            }
+        }
+
+        void mouseUp(const juce::MouseEvent &e) override
+        {
+            isDraggingTouch.erase(e.source.getIndex());
+            lastMousePos.erase(e.source.getIndex());
+        }
+    };
+
+    std::unique_ptr<juce::Viewport> scrollViewport;
+    std::unique_ptr<SmartDragToScrollListener> smartDragListener;
 
     void setupiPhoneScrollIfNeeded()
     {
@@ -270,23 +314,22 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         setContentComponent(nullptr, /*deleteOldOne=*/false, /*resizeToFit=*/false);
         JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
-        // Wrap the content in a padded container (PaddingWrapper takes ownership).
+        // Wrapping the content in a padded container
         paddingWrapper = std::make_unique<PaddingWrapper>(content, edgePadding);
 
-        // Build the viewport. PaddingWrapper is viewed but NOT deleted by the viewport
-        // (it's owned by this class via paddingWrapper unique_ptr).
+        // Build the viewport.
         scrollViewport = std::make_unique<juce::Viewport>();
         scrollViewport->setViewedComponent(paddingWrapper.get(), /*deleteOnDetach=*/false);
         scrollViewport->setScrollBarsShown(/*vertical=*/true, /*horizontal=*/true);
-        // nonHover: on touch devices, drags on non-interactive background areas scroll;
-        // interactive controls (knobs, sliders) handle their own drags normally.
-        scrollViewport->setScrollOnDragMode(juce::Viewport::ScrollOnDragMode::nonHover);
+        // Turn off native drag-to-scroll. We will handle dragging manually with our listener
+        // so we can seamlessly ignore drags that start on sliders.
+        scrollViewport->setScrollOnDragMode(juce::Viewport::ScrollOnDragMode::never);
         scrollViewport->setSize(screenW, screenH);
-
-        // Start the view at (edgePadding, edgePadding) so the UI is flush with the
-        // top-left corner of the viewport on first open. The user can then swipe
-        // left or up to reveal the padding and tap edge controls more comfortably.
         scrollViewport->setViewPosition(edgePadding, edgePadding);
+
+        // Attach our custom smart drag-to-scroll listener
+        smartDragListener = std::make_unique<SmartDragToScrollListener>(scrollViewport.get());
+        paddingWrapper->addMouseListener(smartDragListener.get(), true);
 
         setContentNonOwned(scrollViewport.get(), false);
         scrollViewport->setBounds(getLocalBounds());
