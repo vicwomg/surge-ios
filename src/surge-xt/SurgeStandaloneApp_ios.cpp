@@ -195,7 +195,7 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
             juce::StandaloneFilterWindow::resized();
         }
 
-        optionsButton.setBounds(10, 10, 80, 30);
+        optionsButton.setBounds(10, 22, 60, 22);
         optionsButton.toFront(false);
     }
 
@@ -248,7 +248,7 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
 
         // Render the UI at 125% of native size.
         constexpr float iPhoneZoom = 1.25f;
-        constexpr int edgePadding = 40; // px of empty space on each side
+        constexpr int edgePadding = 50; // px of empty space on each side
 
         int contentW = juce::roundToInt(surgeNativeW * iPhoneZoom);
         int contentH = juce::roundToInt(surgeNativeH * iPhoneZoom);
