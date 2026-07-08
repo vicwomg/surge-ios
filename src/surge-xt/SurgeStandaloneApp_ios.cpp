@@ -178,16 +178,120 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         optionsButton.onClick = [this]() { showAudioSettingsDialog(); };
         optionsButton.setTriggeredOnMouseDown(true);
         optionsButton.setAlwaysOnTop(true);
+
+        setupiPhoneScrollIfNeeded();
     }
 
     void resized() override
     {
-        juce::StandaloneFilterWindow::resized();
+        if (scrollViewport != nullptr)
+        {
+            // Don't call parent resized() — it would resize content to fill the window,
+            // collapsing it and breaking the scroll. Instead, just fit the viewport.
+            scrollViewport->setBounds(getLocalBounds());
+        }
+        else
+        {
+            juce::StandaloneFilterWindow::resized();
+        }
+
         optionsButton.setBounds(10, 10, 80, 30);
         optionsButton.toFront(false);
     }
 
   private:
+    std::unique_ptr<juce::Viewport> scrollViewport;
+
+    // Wraps the synth content with empty padding on all sides so the user can
+    // scroll slightly past every edge, making extremity controls easier to tap.
+    struct PaddingWrapper : public juce::Component
+    {
+        PaddingWrapper(juce::Component *contentToOwn, int padding)
+            : child(contentToOwn), pad(padding)
+        {
+            addAndMakeVisible(*child);
+            child->setTopLeftPosition(pad, pad);
+            setSize(child->getWidth() + 2 * pad, child->getHeight() + 2 * pad);
+        }
+
+        // If Surge internally changes its editor size (e.g. user changes zoom),
+        // keep the child positioned and resize this wrapper to match.
+        void childBoundsChanged(juce::Component *) override
+        {
+            child->setTopLeftPosition(pad, pad);
+            setSize(child->getWidth() + 2 * pad, child->getHeight() + 2 * pad);
+        }
+
+        std::unique_ptr<juce::Component> child;
+        int pad;
+    };
+
+    std::unique_ptr<PaddingWrapper> paddingWrapper;
+
+    void setupiPhoneScrollIfNeeded()
+    {
+        // Detect iPhone vs iPad: iPad short edge >= 768pt in landscape.
+        auto &displays = juce::Desktop::getInstance().getDisplays();
+        auto *primary = displays.getPrimaryDisplay();
+        if (primary == nullptr)
+            return;
+
+        auto userArea = primary->userArea;
+        int shortEdge = juce::jmin(userArea.getWidth(), userArea.getHeight());
+        bool isIPhone = (shortEdge < 768);
+        if (!isIPhone)
+            return;
+
+        // Surge's native canvas size (from globals.h BASE_WINDOW_SIZE_X/Y).
+        constexpr int surgeNativeW = 913;
+        constexpr int surgeNativeH = 569;
+
+        // Render the UI at 125% of native size.
+        constexpr float iPhoneZoom = 1.25f;
+        constexpr int edgePadding = 40; // px of empty space on each side
+
+        int contentW = juce::roundToInt(surgeNativeW * iPhoneZoom);
+        int contentH = juce::roundToInt(surgeNativeH * iPhoneZoom);
+
+        int screenW = juce::jmax(userArea.getWidth(), userArea.getHeight());
+        int screenH = shortEdge;
+
+        juce::Component *content = getContentComponent();
+        if (content == nullptr)
+            return;
+
+        // Resize the content to the 125% zoom dimensions.
+        // StandaloneFilterWindow's MainContentComponent propagates this size
+        // to the SurgeSynthEditor, which applies the matching zoom factor.
+        content->setSize(contentW, contentH);
+
+        // Detach content from the window without deleting it.
+        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE("-Wdeprecated-declarations")
+        setContentComponent(nullptr, /*deleteOldOne=*/false, /*resizeToFit=*/false);
+        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+
+        // Wrap the content in a padded container (PaddingWrapper takes ownership).
+        paddingWrapper = std::make_unique<PaddingWrapper>(content, edgePadding);
+
+        // Build the viewport. PaddingWrapper is viewed but NOT deleted by the viewport
+        // (it's owned by this class via paddingWrapper unique_ptr).
+        scrollViewport = std::make_unique<juce::Viewport>();
+        scrollViewport->setViewedComponent(paddingWrapper.get(), /*deleteOnDetach=*/false);
+        scrollViewport->setScrollBarsShown(/*vertical=*/true, /*horizontal=*/true);
+        // nonHover: on touch devices, drags on non-interactive background areas scroll;
+        // interactive controls (knobs, sliders) handle their own drags normally.
+        scrollViewport->setScrollOnDragMode(juce::Viewport::ScrollOnDragMode::nonHover);
+        scrollViewport->setSize(screenW, screenH);
+
+        // Start the view at (edgePadding, edgePadding) so the UI is flush with the
+        // top-left corner of the viewport on first open. The user can then swipe
+        // left or up to reveal the padding and tap edge controls more comfortably.
+        scrollViewport->setViewPosition(edgePadding, edgePadding);
+
+        setContentNonOwned(scrollViewport.get(), false);
+        scrollViewport->setBounds(getLocalBounds());
+    }
+
     void showAudioSettingsDialog()
     {
         juce::DialogWindow::LaunchOptions options;
@@ -294,6 +398,10 @@ class StandaloneApp final : public juce::JUCEApplication
 
     void initialise(const juce::String &) override
     {
+        // Lock to landscape on all iOS devices (iPhone and iPad).
+        juce::Desktop::getInstance().setOrientationsEnabled(juce::Desktop::rotatedClockwise |
+                                                            juce::Desktop::rotatedAntiClockwise);
+
         mainWindow.reset(createWindow());
 
         if (mainWindow != nullptr)
