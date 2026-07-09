@@ -33,6 +33,9 @@
 #undef Point
 #endif
 
+#include "SurgeSynthEditor.h"
+#include "gui/SurgeGUIEditor.h"
+
 namespace Surge
 {
 namespace Standalone
@@ -172,14 +175,41 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
                      std::unique_ptr<juce::StandalonePluginHolder> pluginHolderIn)
         : juce::StandaloneFilterWindow(title, backgroundColour,
                                        prepareStandalonePluginHolder(std::move(pluginHolderIn))),
-          optionsButton("Options")
+          optionsButton("Options"),
+          zoomInButton("zoom+"),
+          zoomOutButton("zoom-")
     {
         addAndMakeVisible(optionsButton);
         optionsButton.onClick = [this]() { showAudioSettingsDialog(); };
         optionsButton.setTriggeredOnMouseDown(true);
         optionsButton.setAlwaysOnTop(true);
 
+        addAndMakeVisible(zoomOutButton);
+        zoomOutButton.onClick = [this]() { changeZoom(-10.0f); };
+        zoomOutButton.setTriggeredOnMouseDown(true);
+        zoomOutButton.setAlwaysOnTop(true);
+
+        addAndMakeVisible(zoomInButton);
+        zoomInButton.onClick = [this]() { changeZoom(10.0f); };
+        zoomInButton.setTriggeredOnMouseDown(true);
+        zoomInButton.setAlwaysOnTop(true);
+
         setupiPhoneScrollIfNeeded();
+    }
+
+    void changeZoom(float delta)
+    {
+        if (pluginHolder && pluginHolder->processor)
+        {
+            if (auto* ed = dynamic_cast<SurgeSynthEditor*>(pluginHolder->processor->getActiveEditor()))
+            {
+                if (auto* sge = ed->getSurgeGUIEditor())
+                {
+                    float currentZoom = sge->getZoomFactor();
+                    sge->resizeWindow(currentZoom + delta);
+                }
+            }
+        }
     }
 
     void resized() override
@@ -196,7 +226,12 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         }
 
         optionsButton.setBounds(20, 12, 60, 22);
+        zoomOutButton.setBounds(20 + 60 + 10, 12, 40, 22);
+        zoomInButton.setBounds(20 + 60 + 10 + 40 + 5, 12, 40, 22);
+
         optionsButton.toFront(false);
+        zoomOutButton.toFront(false);
+        zoomInButton.toFront(false);
     }
 
   private:
@@ -373,6 +408,8 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
     }
 
     juce::TextButton optionsButton;
+    juce::TextButton zoomInButton;
+    juce::TextButton zoomOutButton;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StandaloneWindow)
 };

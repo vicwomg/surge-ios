@@ -137,6 +137,7 @@ class SurgeSynthEditor : public juce::AudioProcessorEditor,
 
     std::shared_ptr<SurgeJUCELookAndFeel> surgeLF;
     SurgeJUCELookAndFeel *getSurgeLookAndFeel() { return surgeLF.get(); }
+    SurgeGUIEditor *getSurgeGUIEditor() { return sge.get(); }
 
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
