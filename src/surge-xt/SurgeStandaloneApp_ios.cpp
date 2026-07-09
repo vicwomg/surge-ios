@@ -226,8 +226,8 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         }
 
         optionsButton.setBounds(20, 12, 60, 22);
-        zoomOutButton.setBounds(20 + 60 + 10, 12, 40, 22);
-        zoomInButton.setBounds(20 + 60 + 10 + 40 + 5, 12, 40, 22);
+        zoomOutButton.setBounds(20 + 60 + 10, 12, 45, 22);
+        zoomInButton.setBounds(20 + 60 + 10 + 45 + 5, 12, 45, 22);
 
         optionsButton.toFront(false);
         zoomOutButton.toFront(false);
@@ -235,28 +235,31 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
     }
 
   private:
-    // Wraps the synth content with empty padding on all sides so the user can
+    // Wraps the synth content with empty padding so the user can
     // scroll slightly past every edge, making extremity controls easier to tap.
+    // On iPad, we add only vertical padding (top + bottom) to keep the Options
+    // and Zoom buttons from overlapping the main UI.
     struct PaddingWrapper : public juce::Component
     {
-        PaddingWrapper(juce::Component *contentToOwn, int padding)
-            : child(contentToOwn), pad(padding)
+        PaddingWrapper(juce::Component *contentToOwn, int hPad, int vPad)
+            : child(contentToOwn), horizontalPad(hPad), verticalPad(vPad)
         {
             addAndMakeVisible(*child);
-            child->setTopLeftPosition(pad, pad);
-            setSize(child->getWidth() + 2 * pad, child->getHeight() + 2 * pad);
+            child->setTopLeftPosition(horizontalPad, verticalPad);
+            setSize(child->getWidth() + 2 * horizontalPad, child->getHeight() + 2 * verticalPad);
         }
 
         // If Surge internally changes its editor size (e.g. user changes zoom),
         // keep the child positioned and resize this wrapper to match.
         void childBoundsChanged(juce::Component *) override
         {
-            child->setTopLeftPosition(pad, pad);
-            setSize(child->getWidth() + 2 * pad, child->getHeight() + 2 * pad);
+            child->setTopLeftPosition(horizontalPad, verticalPad);
+            setSize(child->getWidth() + 2 * horizontalPad, child->getHeight() + 2 * verticalPad);
         }
 
         std::unique_ptr<juce::Component> child;
-        int pad;
+        int horizontalPad;
+        int verticalPad;
     };
 
     std::unique_ptr<PaddingWrapper> paddingWrapper;
@@ -291,7 +294,7 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
                 auto currentPos = e.getScreenPosition();
                 auto delta = currentPos - lastMousePos[e.source.getIndex()];
                 lastMousePos[e.source.getIndex()] = currentPos;
-                
+
                 auto pos = viewport->getViewPosition();
                 viewport->setViewPosition(pos.x - delta.x, pos.y - delta.y);
             }
@@ -309,7 +312,7 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
 
     void setupiPhoneScrollIfNeeded()
     {
-        // Detect iPhone vs iPad: iPad short edge >= 768pt in landscape.
+        // Detect iPhone vs iPad: iPad short edge >= 768pt.
         auto &displays = juce::Desktop::getInstance().getDisplays();
         auto *primary = displays.getPrimaryDisplay();
         if (primary == nullptr)
@@ -318,19 +321,9 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         auto userArea = primary->userArea;
         int shortEdge = juce::jmin(userArea.getWidth(), userArea.getHeight());
         bool isIPhone = (shortEdge < 768);
-        if (!isIPhone)
-            return;
-
         // Surge's native canvas size (from globals.h BASE_WINDOW_SIZE_X/Y).
         constexpr int surgeNativeW = 913;
         constexpr int surgeNativeH = 569;
-
-        // Render the UI at 125% of native size.
-        constexpr float iPhoneZoom = 1.25f;
-        constexpr int edgePadding = 50; // px of empty space on each side
-
-        int contentW = juce::roundToInt(surgeNativeW * iPhoneZoom);
-        int contentH = juce::roundToInt(surgeNativeH * iPhoneZoom);
 
         int screenW = juce::jmax(userArea.getWidth(), userArea.getHeight());
         int screenH = shortEdge;
@@ -339,18 +332,50 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         if (content == nullptr)
             return;
 
-        // Resize the content to the 125% zoom dimensions.
-        // StandaloneFilterWindow's MainContentComponent propagates this size
-        // to the SurgeSynthEditor, which applies the matching zoom factor.
-        content->setSize(contentW, contentH);
+        int hPad, vPad;
+
+        if (isIPhone)
+        {
+            // Render the UI at 125% of native size on iPhone.
+            constexpr float iPhoneZoom = 1.25f;
+            constexpr int edgePadding = 50; // px of empty space on each side
+
+            int contentW = juce::roundToInt(surgeNativeW * iPhoneZoom);
+            int contentH = juce::roundToInt(surgeNativeH * iPhoneZoom);
+
+            // Resize the content to the 125% zoom dimensions.
+            // StandaloneFilterWindow's MainContentComponent propagates this size
+            // to the SurgeSynthEditor, which applies the matching zoom factor.
+            content->setSize(contentW, contentH);
+
+            hPad = edgePadding;
+            vPad = edgePadding;
+        }
+        else
+        {
+            // iPad: size the content so the synth fills the screen width — the same
+            // "fit width" zoom the standalone window would have applied naturally.
+            // This overrides any saved zoom preference (e.g. from prior iPhone testing).
+            float iPadZoom = static_cast<float>(screenW) / surgeNativeW;
+            int contentW = screenW;
+            int contentH = juce::roundToInt(surgeNativeH * iPadZoom);
+            content->setSize(contentW, contentH);
+
+            // Only add a top + bottom margin so that the Options / Zoom button bar
+            // (≈46 px tall) does not sit on top of the synth UI.
+            constexpr int iPadVerticalMargin = 40;
+
+            hPad = 0;
+            vPad = iPadVerticalMargin;
+        }
 
         // Detach content from the window without deleting it.
         JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE("-Wdeprecated-declarations")
         setContentComponent(nullptr, /*deleteOldOne=*/false, /*resizeToFit=*/false);
         JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
-        // Wrapping the content in a padded container
-        paddingWrapper = std::make_unique<PaddingWrapper>(content, edgePadding);
+        // Wrap the content in a padded container.
+        paddingWrapper = std::make_unique<PaddingWrapper>(content, hPad, vPad);
 
         // Build the viewport.
         scrollViewport = std::make_unique<juce::Viewport>();
@@ -360,7 +385,8 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         // so we can seamlessly ignore drags that start on sliders.
         scrollViewport->setScrollOnDragMode(juce::Viewport::ScrollOnDragMode::never);
         scrollViewport->setSize(screenW, screenH);
-        scrollViewport->setViewPosition(edgePadding, edgePadding);
+        // Scroll the viewport so the top-left of the content (minus padding) is visible.
+        scrollViewport->setViewPosition(hPad, vPad);
 
         // Attach our custom smart drag-to-scroll listener
         smartDragListener = std::make_unique<SmartDragToScrollListener>(scrollViewport.get());
