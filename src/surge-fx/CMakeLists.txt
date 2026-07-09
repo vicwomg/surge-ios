@@ -50,6 +50,11 @@ juce_add_plugin(${PROJECT_NAME}
   LV2_SHARED_LIBRARY_NAME SurgeXT_FX
 
   FORMATS ${SURGE_JUCE_FORMATS}
+
+  IPAD_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  IPHONE_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+
+  PLIST_TO_MERGE "<dict><key>UIStatusBarHidden</key><true/><key>UIViewControllerBasedStatusBarAppearance</key><false/></dict>"
 )
 
 target_sources(${PROJECT_NAME} PRIVATE

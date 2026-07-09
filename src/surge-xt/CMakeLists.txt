@@ -63,6 +63,11 @@ juce_add_plugin(${PROJECT_NAME}
 
   FILE_SHARING_ENABLED TRUE
   DOCUMENT_BROWSER_ENABLED TRUE
+
+  IPAD_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  IPHONE_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+
+  PLIST_TO_MERGE "<dict><key>UIStatusBarHidden</key><true/><key>UIViewControllerBasedStatusBarAppearance</key><false/></dict>"
 )
 
 if(SURGE_BUILD_CLAP)
