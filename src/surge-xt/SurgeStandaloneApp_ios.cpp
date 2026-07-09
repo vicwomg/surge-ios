@@ -445,6 +445,9 @@ class StandaloneApp final : public juce::JUCEApplication
         juce::Desktop::getInstance().setOrientationsEnabled(juce::Desktop::rotatedClockwise |
                                                             juce::Desktop::rotatedAntiClockwise);
 
+        // Prevent the screen from sleeping entirely while the app is open
+        juce::Desktop::getInstance().setScreenSaverEnabled(false);
+
         mainWindow.reset(createWindow());
 
         if (mainWindow != nullptr)
