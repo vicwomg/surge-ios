@@ -420,9 +420,7 @@ SurgeGUIEditor::SurgeGUIEditor(SurgeSynthEditor *jEd, SurgeSynthesizer *synth)
         float baseH = getWindowSizeY();
 
 #if JUCE_IOS
-        int maxScreenUsage = 100;
-        auto correctedZf =
-            findLargestFittingZoomBetween(minimumZoom, 250.0, 5, maxScreenUsage, baseW, baseH);
+        auto correctedZf = 125.0f;
 #else
         int maxScreenUsage = 70;
         auto correctedZf =
@@ -3038,7 +3036,7 @@ void SurgeGUIEditor::tuningChanged()
 
 bool SurgeGUIEditor::doesZoomFitToScreen(float zf, float &correctedZf)
 {
-#if !LINUX && !JUCE_IOS
+#if !LINUX
     correctedZf = zf;
     return true;
 #endif

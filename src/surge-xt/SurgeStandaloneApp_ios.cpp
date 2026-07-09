@@ -195,7 +195,7 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
             juce::StandaloneFilterWindow::resized();
         }
 
-        optionsButton.setBounds(10, 22, 60, 22);
+        optionsButton.setBounds(20, 12, 60, 22);
         optionsButton.toFront(false);
     }
 
