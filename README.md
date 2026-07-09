@@ -1,13 +1,24 @@
 # Surge IOS Port
 
-This is an iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts. The main work done to make this functional:
+This is a fan-made iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts.
+
+**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store, so sideloading methods (and all the invonveniences associated with them) are the only way to install it to your device. Don't ask the Surge team or me for an App Store release. It will probably never happen.
+
+The main work done to make this functional:
 
 - Add iOS handling to the cmake system and incompatible libraries (luajit)
 - Handle factory presets bundling with the app
-- Handle persistent storage of user settings to
+- Handle persistent storage of user settings and patches to "On My iPhone > Surge XT"
 - Expose JUCE audio "Options" button to iOS UI layer
-- Force landscape mode
-- Implement scrolling, zoom, and fit to cram the UI in smaller screens (iPad is usable best-fit, iPhone needs some help)
+- Force landscape mode, handle proper zooming to fit screen
+- Implement touch scrolling, zoom -/+, and "fit to screen" to cram the extensive UI in smaller screens (iPad is usable best-fit, iPhone needs some help)
+- Fix some issues rendering the Virtual Keyboard
+
+I find that Surge runs excellently on even my 2018 iPad 6th generation. The basic functionality is there to do what I need to do with Surge: play the synth, control it with a physical MPE MIDI controller, adjust parameters, add effects, and load/import patches (just airdrop them into "On My iPhone > Surge XT > Surge Synth Team > Surge XT > Patches").
+
+However, Surge's feature set is huge and there are probably a lot of corner cases and potential bugs I'm not considering.
+
+For devs: Xcode build instructions are included in the original documentation below.
 
 # Surge XT
 
