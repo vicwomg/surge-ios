@@ -1,4 +1,17 @@
+# Surge IOS Port
+
+This is an iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts. The main work done to make this functional:
+
+- Add iOS handling to the cmake system and incompatible libraries (luajit)
+- Handle factory presets bundling with the app
+- Handle persistent storage of user settings to
+- Expose JUCE audio "Options" button to iOS UI layer
+- Force landscape mode
+- Implement scrolling, zoom, and fit to cram the UI in smaller screens (iPad is usable best-fit, iPhone needs some help)
+
 # Surge XT
+
+This is a working
 
 **If you are a musician looking to use Surge XT, please download the appropriate binary
 [from our website](https://surge-synthesizer.github.io). Surge Synth Team makes regular releases for all supported

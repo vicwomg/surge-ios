@@ -177,7 +177,8 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
                                        prepareStandalonePluginHolder(std::move(pluginHolderIn))),
           optionsButton("Options"),
           zoomInButton("zoom+"),
-          zoomOutButton("zoom-")
+          zoomOutButton("zoom-"),
+          zoomFitButton("fit")
     {
         addAndMakeVisible(optionsButton);
         optionsButton.onClick = [this]() { showAudioSettingsDialog(); };
@@ -193,6 +194,11 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         zoomInButton.onClick = [this]() { changeZoom(10.0f); };
         zoomInButton.setTriggeredOnMouseDown(true);
         zoomInButton.setAlwaysOnTop(true);
+
+        addAndMakeVisible(zoomFitButton);
+        zoomFitButton.onClick = [this]() { fitZoom(); };
+        zoomFitButton.setTriggeredOnMouseDown(true);
+        zoomFitButton.setAlwaysOnTop(true);
 
         setupiPhoneScrollIfNeeded();
     }
@@ -212,6 +218,49 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         }
     }
 
+    // Calculates the zoom % that makes the synth's UI exactly fill the screen width,
+    // using sge->getWindowSizeX() (skin-aware) rather than the hardcoded 913px constant.
+    // Falls back to 100% if the editor is not yet available.
+    float calcFitZoom() const
+    {
+        auto &displays = juce::Desktop::getInstance().getDisplays();
+        auto *primary = displays.getPrimaryDisplay();
+        if (primary == nullptr)
+            return 100.f;
+
+        auto userArea = primary->userArea;
+        int screenW = juce::jmax(userArea.getWidth(), userArea.getHeight());
+
+        if (pluginHolder && pluginHolder->processor)
+        {
+            if (auto *ed = dynamic_cast<SurgeSynthEditor *>(pluginHolder->processor->getActiveEditor()))
+            {
+                if (auto *sge = ed->getSurgeGUIEditor())
+                {
+                    float skinW = static_cast<float>(sge->getWindowSizeX());
+                    if (skinW > 0)
+                        return std::round(screenW / skinW * 100.f);
+                }
+            }
+        }
+
+        // Editor not ready yet — fall back to the default skin width.
+        constexpr int surgeNativeW = 913;
+        return std::round(static_cast<float>(screenW) / surgeNativeW * 100.f);
+    }
+
+    void fitZoom()
+    {
+        if (pluginHolder && pluginHolder->processor)
+        {
+            if (auto *ed = dynamic_cast<SurgeSynthEditor *>(pluginHolder->processor->getActiveEditor()))
+            {
+                if (auto *sge = ed->getSurgeGUIEditor())
+                    sge->resizeWindow(calcFitZoom());
+            }
+        }
+    }
+
     void resized() override
     {
         if (scrollViewport != nullptr)
@@ -225,13 +274,17 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
             juce::StandaloneFilterWindow::resized();
         }
 
-        optionsButton.setBounds(20, 12, 60, 22);
-        zoomOutButton.setBounds(20 + 60 + 10, 12, 45, 22);
-        zoomInButton.setBounds(20 + 60 + 10 + 45 + 5, 12, 45, 22);
+        // Layout: [Options 60] [zoom- 45] [zoom+ 45] [fit/% 55]
+        int x = 20;
+        optionsButton.setBounds(x, 12, 60, 22);  x += 60 + 10;
+        zoomOutButton.setBounds(x, 12, 45, 22);  x += 45 + 5;
+        zoomInButton.setBounds(x, 12, 45, 22);   x += 45 + 5;
+        zoomFitButton.setBounds(x, 12, 24, 22);
 
         optionsButton.toFront(false);
         zoomOutButton.toFront(false);
         zoomInButton.toFront(false);
+        zoomFitButton.toFront(false);
     }
 
   private:
@@ -353,13 +406,10 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
         }
         else
         {
-            // iPad: size the content so the synth fills the screen width — the same
-            // "fit width" zoom the standalone window would have applied naturally.
-            // This overrides any saved zoom preference (e.g. from prior iPhone testing).
-            float iPadZoom = static_cast<float>(screenW) / surgeNativeW;
-            int contentW = screenW;
-            int contentH = juce::roundToInt(surgeNativeH * iPadZoom);
-            content->setSize(contentW, contentH);
+            // iPad: set content to native size (100%) now — a proper fit-width zoom is
+            // applied asynchronously below after the viewport is constructed, going through
+            // sge->resizeWindow() so that Surge's zoomFactor and the menu both stay in sync.
+            content->setSize(surgeNativeW, surgeNativeH);
 
             // Only add a top + bottom margin so that the Options / Zoom button bar
             // (≈46 px tall) does not sit on top of the synth UI.
@@ -394,6 +444,14 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
 
         setContentNonOwned(scrollViewport.get(), false);
         scrollViewport->setBounds(getLocalBounds());
+
+        if (!isIPhone)
+        {
+            // Apply the fit-width zoom through the official Surge path (sge->resizeWindow)
+            // so that zoomFactor and the menu zoom display are both correct.
+            // Deferred so the SurgeSynthEditor's active editor is accessible.
+            juce::MessageManager::callAsync([this]() { fitZoom(); });
+        }
     }
 
     void showAudioSettingsDialog()
@@ -436,6 +494,7 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
     juce::TextButton optionsButton;
     juce::TextButton zoomInButton;
     juce::TextButton zoomOutButton;
+    juce::TextButton zoomFitButton;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StandaloneWindow)
 };
