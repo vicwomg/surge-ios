@@ -27,7 +27,7 @@ juce_add_plugin(${PROJECT_NAME}
   PRODUCT_NAME ${SURGE_XT_PRODUCT_NAME}
   COMPANY_NAME "Surge Synth Team"
   COMPANY_WEBSITE "https://surge-synth-team.org/"
-  BUNDLE_ID "org.surge-synth-team.surge-xt"
+  BUNDLE_ID "org.vicwomg.surge-xt"
   PLUGIN_MANUFACTURER_CODE VmbA
   PLUGIN_CODE SgXT
 
