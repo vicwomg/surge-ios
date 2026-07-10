@@ -466,6 +466,80 @@ void SurgeSynthEditor::resized()
                         getConstrainer()->setFixedAspectRatio(0.f);
 
                     sge->moveTopLeftTo(std::round(pw / snz), std::round(ph / snz));
+
+                    // In fullscreen mode we must lay out the virtual keyboard here, before the
+                    // early return, because the code below (lines 507+) is never reached.
+                    // The transform for child widgets uses the un-snz zoom because
+                    // topLevelContainer already carries the snz scale.
+                    auto fsZoomFactor = sge->getZoomFactor() * 0.01f;
+                    auto fsXf = juce::AffineTransform().scaled(fsZoomFactor);
+                    bool addTempo = processor.wrapperType == juce::AudioProcessor::wrapperType_Standalone;
+
+                    if (drawExtendedControls)
+                    {
+                        auto ky = sge->getWindowSizeY();
+                        auto kx = addTempo ? 50 : 0;
+                        auto wheels = 32;
+                        auto margin = 6;
+                        int tempoHeight = 10, typeinHeight = 14;
+                        int tempoBlockHeight = tempoHeight + typeinHeight;
+                        int noTempoSusYOffset = -16;
+
+                        auto kr = juce::Rectangle<int>(kx + wheels + margin, ky,
+                                                       sge->getWindowSizeX() - kx - wheels - margin,
+                                                       extraYSpaceForVirtualKeyboard);
+                        keyboard->setBounds(kr);
+                        keyboard->setTransform(fsXf);
+                        keyboard->setVisible(true);
+
+                        auto pmr = juce::Rectangle<int>(kx, ky, wheels / 2, extraYSpaceForVirtualKeyboard);
+                        pitchwheel->setBounds(pmr);
+                        pitchwheel->setTransform(fsXf);
+                        pitchwheel->setVisible(true);
+                        pmr = pmr.translated((wheels / 2) + margin / 3, 0);
+                        modwheel->setBounds(pmr);
+                        modwheel->setTransform(fsXf);
+                        modwheel->setVisible(true);
+
+                        if (addTempo)
+                        {
+                            tempoLabel->setBounds(4, ky, kx - 8, tempoHeight);
+                            tempoLabel->setFont(sge->currentSkin->fontManager->getLatoAtSize(8, juce::Font::bold));
+                            tempoLabel->setJustificationType(juce::Justification::centred);
+                            tempoLabel->setTransform(fsXf);
+                            tempoLabel->setVisible(addTempo);
+
+                            tempoTypein->setBounds(4, ky + tempoHeight, kx - 8, typeinHeight);
+                            tempoTypein->setText(
+                                std::to_string((int)(processor.surge->storage.temposyncratio * 120)));
+                            tempoTypein->setFont(sge->currentSkin->fontManager->getLatoAtSize(9));
+                            tempoTypein->setIndents(4, -1);
+                            tempoTypein->setJustification(juce::Justification::centred);
+                            tempoTypein->setTransform(fsXf);
+                            tempoTypein->setVisible(addTempo);
+                        }
+
+                        auto sml = juce::Rectangle<int>(4, ky + tempoBlockHeight, kx - 8, tempoHeight);
+                        sml.translate(0, addTempo ? 0 : noTempoSusYOffset);
+                        sustainLabel->setBounds(sml);
+                        sustainLabel->setFont(sge->currentSkin->fontManager->getLatoAtSize(8, juce::Font::bold));
+                        sustainLabel->setJustificationType(juce::Justification::centred);
+                        sustainLabel->setTransform(fsXf);
+                        sustainLabel->setVisible(true);
+
+                        auto smr = juce::Rectangle<int>(4, ky + tempoBlockHeight + tempoHeight, kx - 8, typeinHeight / 2);
+                        smr = smr.withBottom(pmr.getBottom() - 1).translated(0, addTempo ? 0 : noTempoSusYOffset);
+                        suspedal->setBounds(smr);
+                        suspedal->setTransform(fsXf);
+                        suspedal->setVisible(true);
+                    }
+                    else
+                    {
+                        keyboard->setVisible(false);
+                        tempoLabel->setVisible(false);
+                        tempoTypein->setVisible(false);
+                    }
+
                     return;
                 }
                 comp = nullptr;

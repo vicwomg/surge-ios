@@ -88,6 +88,7 @@ build-arm/
 build_lv2
 buildiwyu/
 buildpy/
+build_ios/
 cmake-build-*/
 bwd/
 CMakeUserPresets.json
@@ -109,3 +110,4 @@ minst.sh
 Testing/
 installer-tmp/
 .junie/
+.env

@@ -1,5 +1,28 @@
 # vi:set sw=2 et:
 cmake_minimum_required(VERSION 3.15)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  message(STATUS "Configuring for iOS build...")
+  set(SURGE_BUILD_TESTRUNNER OFF CACHE BOOL "Build Surge unit test runner" FORCE)
+  set(SURGE_SKIP_VST3 ON CACHE BOOL "Skip VST3 build" FORCE)
+  set(SURGE_XT_BUILD_AUV3 ON CACHE BOOL "Build Surge XT as an AUv3" FORCE)
+  set(SURGE_SKIP_WERROR ON CACHE BOOL "Skip warnings as errors on iOS" FORCE)
+  # Load variables from .env if it exists
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.env")
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/.env" env_strings)
+    foreach(env_line ${env_strings})
+      if(env_line MATCHES "^([^#][^=]*)=(.*)$")
+        string(STRIP "${CMAKE_MATCH_1}" env_name)
+        string(STRIP "${CMAKE_MATCH_2}" env_val)
+        set(ENV{${env_name}} "${env_val}")
+      endif()
+    endforeach()
+  endif()
+
+  set(SURGE_IOS_DEV_TEAM "$ENV{SURGE_IOS_DEV_TEAM}" CACHE STRING "Apple Development Team ID for iOS builds")
+  set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${SURGE_IOS_DEV_TEAM}")
+  set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+endif()
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "Minimum macOS version")

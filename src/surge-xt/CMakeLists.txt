@@ -27,7 +27,7 @@ juce_add_plugin(${PROJECT_NAME}
   PRODUCT_NAME ${SURGE_XT_PRODUCT_NAME}
   COMPANY_NAME "Surge Synth Team"
   COMPANY_WEBSITE "https://surge-synth-team.org/"
-  BUNDLE_ID "org.surge-synth-team.surge-xt"
+  BUNDLE_ID "org.vicwomg.surge-xt"
   PLUGIN_MANUFACTURER_CODE VmbA
   PLUGIN_CODE SgXT
 
@@ -60,6 +60,14 @@ juce_add_plugin(${PROJECT_NAME}
   LV2_SHARED_LIBRARY_NAME SurgeXT
 
   FORMATS ${SURGE_JUCE_FORMATS}
+
+  FILE_SHARING_ENABLED TRUE
+  DOCUMENT_BROWSER_ENABLED TRUE
+
+  IPAD_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  IPHONE_SCREEN_ORIENTATIONS UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+
+  PLIST_TO_MERGE "<dict><key>UIStatusBarHidden</key><true/><key>UIViewControllerBasedStatusBarAppearance</key><false/></dict>"
 )
 
 if(SURGE_BUILD_CLAP)
@@ -247,9 +255,11 @@ target_include_directories(${PROJECT_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_subdirectory(cli)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  add_subdirectory(cli)
+endif()
 
-if(APPLE)
+if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
   add_dependencies(${PROJECT_NAME}_Standalone ${PROJECT_NAME}-cli)
   get_property(cliname TARGET ${PROJECT_NAME}-cli PROPERTY RUNTIME_OUTPUT_DIRECTORY)
   get_property(saname TARGET ${PROJECT_NAME}_Standalone PROPERTY RUNTIME_OUTPUT_DIRECTORY)
@@ -263,6 +273,25 @@ if(APPLE)
     COMMAND echo "Relocating CLI executable into standalone"
     COMMAND ${CMAKE_COMMAND} -E copy "${cliexe}" "${saname}/Surge XT.app/Contents/MacOS"
   )
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  if(TARGET ${PROJECT_NAME}_Standalone)
+    target_sources(${PROJECT_NAME}_Standalone PRIVATE SurgeStandaloneApp_ios.cpp)
+    target_compile_definitions(${PROJECT_NAME}_Standalone PRIVATE JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1)
+  endif()
+
+  foreach(fmt Standalone AUv3)
+    if(TARGET ${PROJECT_NAME}_${fmt})
+      add_custom_command(
+        TARGET ${PROJECT_NAME}_${fmt}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+          "${CMAKE_SOURCE_DIR}/resources/data"
+          "$<TARGET_BUNDLE_CONTENT_DIR:${PROJECT_NAME}_${fmt}>/SurgeXTData"
+      )
+    endif()
+  endforeach()
 endif()
 
 surge_juce_package(${PROJECT_NAME} "Surge XT")

@@ -10,3 +10,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
     SQLITE_OMIT_DEPRECATED=1
     SQLITE_OMIT_LOAD_EXTENSION=1
     SQLITE_OMIT_WAL=1)
+
+if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wno-error)
+endif()
