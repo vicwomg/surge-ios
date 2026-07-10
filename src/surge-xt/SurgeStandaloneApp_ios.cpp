@@ -180,22 +180,22 @@ class StandaloneWindow final : public juce::StandaloneFilterWindow
           zoomOutButton("zoom-"),
           zoomFitButton("fit")
     {
-        addAndMakeVisible(optionsButton);
+        juce::Component::addAndMakeVisible(&optionsButton);
         optionsButton.onClick = [this]() { showAudioSettingsDialog(); };
         optionsButton.setTriggeredOnMouseDown(true);
         optionsButton.setAlwaysOnTop(true);
 
-        addAndMakeVisible(zoomOutButton);
+        juce::Component::addAndMakeVisible(&zoomOutButton);
         zoomOutButton.onClick = [this]() { changeZoom(-10.0f); };
         zoomOutButton.setTriggeredOnMouseDown(true);
         zoomOutButton.setAlwaysOnTop(true);
 
-        addAndMakeVisible(zoomInButton);
+        juce::Component::addAndMakeVisible(&zoomInButton);
         zoomInButton.onClick = [this]() { changeZoom(10.0f); };
         zoomInButton.setTriggeredOnMouseDown(true);
         zoomInButton.setAlwaysOnTop(true);
 
-        addAndMakeVisible(zoomFitButton);
+        juce::Component::addAndMakeVisible(&zoomFitButton);
         zoomFitButton.onClick = [this]() { fitZoom(); };
         zoomFitButton.setTriggeredOnMouseDown(true);
         zoomFitButton.setAlwaysOnTop(true);

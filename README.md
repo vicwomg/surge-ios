@@ -1,8 +1,8 @@
 # Surge IOS Port
 
-This is a fan-made iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts.
+This is an unofficial iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts.
 
-**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store, so sideloading methods (and all the invonveniences associated with them) are the only way to install it to your device. Don't ask the Surge team or me for an App Store release. It will probably never happen.
+**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store, so sideloading methods like Sidestore and Alt Store (and all their inconveniences) are the only way to install it to your device. Don't ask me or the Surge team an App Store release. It will probably never happen.
 
 The main work done to make this functional:
 
@@ -10,9 +10,15 @@ The main work done to make this functional:
 - Handle factory presets bundling with the app
 - Handle persistent storage of user settings and patches to "On My iPhone > Surge XT"
 - Expose JUCE audio "Options" button to iOS UI layer
+
+Beyond that, there were some quality of life enhancements:
+
+- Allow right-click via two-finger click (tap + hold on the control, then tap with a second finger)
+- Allow sub menu access: Surge > Menu > sub-menus can be opened by tap + hold + drag
 - Force landscape mode, handle proper zooming to fit screen
-- Implement touch scrolling, zoom -/+, and "fit to screen" to cram the extensive UI in smaller screens (iPad is usable best-fit, iPhone needs some help)
+- Implement touch scrolling, zoom -/+, and "fit to screen" to cram the extensive UI in smaller screens (iPad is usable best-fit, iPhone needs scrolling)
 - Fix some issues rendering the Virtual Keyboard
+- Keep screen on while app is running
 
 I find that Surge runs excellently on even my 2018 iPad 6th generation. The basic functionality is there to do what I need to do with Surge: play the synth, control it with a physical MPE MIDI controller, adjust parameters, add effects, and load/import patches (just airdrop them into "On My iPhone > Surge XT > Surge Synth Team > Surge XT > Patches").
 
@@ -270,13 +276,16 @@ To build a fat binary on a Mac, simply add the following CMake argument to your 
 
 ### Building for iOS
 
-Surge XT can be compiled as a standalone iOS app or AUv3 plugin.
+Surge XT can be compiled as a standalone iOS app. You will need Xcode and an Apple account.
 
 To get started on a fresh clone:
 
-1. `git submodule update --init --recursive`
-2. Configure the project with CMake for iOS.
-3. Open the generated project in Xcode, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
+1. Determine your Apple dev id by running `security find-identity -v -p codesigning` it will be listed after your email address in parenthesis.
+2. Create your .env file: `cp .env.example .env`
+3. Edit the .env file with the dev id from step 1.
+4. Run `git submodule update --init --recursive`
+5. Configure the project with CMake for iOS. `cmake -Bbuild_ios -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DSURGE_SKIP_DISTRIBUTION=TRUE`
+6. Open the generated project `build_ios` in Xcode, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
 
 When compiling for an iOS physical device, Surge will automatically bundle the factory data directory (`resources/data`) directly into the `.app` package.
 
