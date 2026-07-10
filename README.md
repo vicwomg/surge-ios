@@ -285,7 +285,10 @@ To get started on a fresh clone:
 3. Edit the .env file with the dev id from step 1.
 4. Run `git submodule update --init --recursive`
 5. Configure the project with CMake for iOS. `cmake -Bbuild_ios -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DSURGE_SKIP_DISTRIBUTION=TRUE`
-6. Open the generated project `build_ios` in Xcode, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
+6. Open the generated project folder `build_ios` in Xcode
+7. In the top bar, select the `surge-xt_Standalone` target, and choose an iOS Simulator or Device as the deployment target.
+8. Click the `surge-xt_Standalone` target and click "Edit scheme", set the Build Configuration: "Release" (debug will work, but will be slow and garble the audio)
+9. Build with the "play" button
 
 When compiling for an iOS physical device, Surge will automatically bundle the factory data directory (`resources/data`) directly into the `.app` package.
 
