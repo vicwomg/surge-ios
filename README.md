@@ -2,7 +2,7 @@
 
 This is an unofficial iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts.
 
-**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store, so sideloading methods like Sidestore and Alt Store (and all their inconveniences) are the only way to install it to your device. Don't ask me or the Surge team an App Store release. It will probably never happen.
+**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store, so sideloading methods like building from source or Sidestore / Alt Store (and all their inconveniences) are the only way to install it to your device. Don't ask me or the Surge team an App Store release. It will probably never happen.
 
 The main work done to make this functional:
 
@@ -20,11 +20,10 @@ Beyond that, there were some quality of life enhancements:
 - Fix some issues rendering the Virtual Keyboard
 - Keep screen on while app is running
 
-I find that Surge runs excellently on even my 2018 iPad 6th generation. The basic functionality is there to do what I need to do with Surge: play the synth, control it with a physical MPE MIDI controller, adjust parameters, add effects, and load/import patches (just airdrop them into "On My iPhone > Surge XT > Surge Synth Team > Surge XT > Patches").
-
-However, Surge's feature set is huge and there are probably a lot of corner cases and potential bugs I'm not considering.
+I find that Surge runs excellently on even my 2018 iPad 6th generation. The basic functionality is there to do what I need to do with Surge: play the synth, control it with a physical MPE MIDI controller, adjust parameters, add effects, and load/import patches (just airdrop them into "On My iPhone > Surge XT > Surge Synth Team > Surge XT > Patches"). However, Surge's feature set is huge and there are probably a lot of corner cases and potential bugs I'm not considering.
 
 For devs: Xcode build instructions are included in the original documentation below.
+The .ipa file is hosted in the releases section of this repo.
 
 # Surge XT
 
