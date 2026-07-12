@@ -5,7 +5,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
   message(STATUS "Configuring for iOS build...")
   set(SURGE_BUILD_TESTRUNNER OFF CACHE BOOL "Build Surge unit test runner" FORCE)
   set(SURGE_SKIP_VST3 ON CACHE BOOL "Skip VST3 build" FORCE)
-  set(SURGE_XT_BUILD_AUV3 ON CACHE BOOL "Build Surge XT as an AUv3" FORCE)
+  set(SURGE_XT_BUILD_AUV3 OFF CACHE BOOL "Build Surge XT as an AUv3" FORCE)
   set(SURGE_SKIP_WERROR ON CACHE BOOL "Skip warnings as errors on iOS" FORCE)
   # Load variables from .env if it exists
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.env")
