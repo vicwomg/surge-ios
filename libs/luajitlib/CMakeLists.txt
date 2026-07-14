@@ -55,8 +55,18 @@ endfunction()
 # Build LuaJIT if existing library is not found
 if(NOT EXISTS "${LUAJIT_CHECK_FILE}")
   message(STATUS "Building LuaJIT at CMake time right now; configure with -DSURGE_SKIP_LUA=TRUE to disable")
-  # Check APPLE before UNIX
-  if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  # Check ANDROID before UNIX
+  if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+    message(STATUS "Running ./build-android-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
+
+    execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+      COMMAND ./build-android-luajit.sh "${LUAJIT_BUILD_DIR}"
+      "${ANDROID_NDK}" "${ANDROID_ABI}" "${ANDROID_PLATFORM}" "${CMAKE_C_COMPILER}" "${CMAKE_AR}" "${CMAKE_RANLIB}" "${CMAKE_STRIP}" "${CMAKE_C_FLAGS}"
+      RESULT_VARIABLE LUAJIT_RESULT
+      OUTPUT_VARIABLE LUAJIT_OUTPUT
+      ERROR_VARIABLE LUAJIT_ERROR)
+
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     message(STATUS "Running ./build-ios-luajit.sh \"${LUAJIT_BUILD_DIR}\" in ${CMAKE_CURRENT_LIST_DIR}")
     execute_process(WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
       COMMAND ./build-ios-luajit.sh "${LUAJIT_BUILD_DIR}"
@@ -98,7 +108,7 @@ if(NOT EXISTS "${LUAJIT_CHECK_FILE}")
   endif()
 
   # Check build script exit code
-  if(${LUAJIT_RESULT} GREATER 0)
+  if(LUAJIT_RESULT GREATER 0)
     handle_error("Failed to build LuaJIT: Script error!")
   endif()
 

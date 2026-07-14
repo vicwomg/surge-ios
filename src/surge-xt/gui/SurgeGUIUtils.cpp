@@ -172,7 +172,7 @@ bool openFileOrFolder(const std::string &f)
     {
         // See this for why we branch out Linux here
         // https://forum.juce.com/t/linux-spaces-in-path-startasprocess-and-process-opendocument/47296
-#if LINUX
+#if LINUX && !defined(__ANDROID__)
         if (vfork() == 0)
         {
             if (execlp("xdg-open", "xdg-open", f.c_str(), (char *)nullptr) < 0)

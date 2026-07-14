@@ -29,6 +29,9 @@ surge_add_lib_subdirectory(sqlite-3.23.3)
 
 set(ZSTD_BUILD_STATIC ON)
 set(ZSTD_BUILD_SHARED OFF)
+if(ANDROID)
+  set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "Build zstd command-line programs" FORCE)
+endif()
 surge_add_lib_subdirectory(zstd)
 
 if(NOT SURGE_SKIP_LUA)
@@ -44,6 +47,12 @@ surge_add_lib_subdirectory(sst/sst-cpputils)
 set(SST_BASIC_BLOCKS_SIMD_OMIT_NATIVE_ALIASES ON CACHE BOOL "No Native Aliases for Surge XT") # Makes ARM64EC use Neon, basically
 surge_add_lib_subdirectory(sst/sst-basic-blocks)
 surge_add_lib_subdirectory(sst/sst-plugininfra)
+if(ANDROID)
+  get_target_property(SURGE_SST_PLUGININFRA_SOURCES sst-plugininfra SOURCES)
+  list(FILTER SURGE_SST_PLUGININFRA_SOURCES EXCLUDE REGEX "src/misc_linux\\.cpp$")
+  set_target_properties(sst-plugininfra PROPERTIES SOURCES "${SURGE_SST_PLUGININFRA_SOURCES}")
+  target_sources(sst-plugininfra PRIVATE PlugininfraMisc_android.cpp)
+endif()
 surge_add_lib_subdirectory(sst/sst-filters)
 surge_add_lib_subdirectory(sst/sst-waveshapers)
 
@@ -282,15 +291,17 @@ if(APPLE)
 elseif(UNIX)
   target_compile_definitions(${PROJECT_NAME} PUBLIC LINUX=1)
 
-  if(SKBUILD)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-      pthread
-    )
-  else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-      pthread
-      -Wl,--no-undefined
-    )
+  if(NOT ANDROID)
+    if(SKBUILD)
+      target_link_libraries(${PROJECT_NAME} PRIVATE
+        pthread
+      )
+    else()
+      target_link_libraries(${PROJECT_NAME} PRIVATE
+        pthread
+        -Wl,--no-undefined
+      )
+    endif()
   endif()
 
   if(CMAKE_SYSTEM_NAME MATCHES "BSD")

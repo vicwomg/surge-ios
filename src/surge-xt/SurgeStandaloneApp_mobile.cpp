@@ -25,6 +25,8 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 
+#include <cstdlib>
+
 #ifdef Component
 #undef Component
 #endif
@@ -42,6 +44,97 @@ namespace Standalone
 {
 namespace iOS
 {
+#if JUCE_ANDROID
+namespace
+{
+constexpr const char *androidSurgeDataAssetPrefix = "assets/SurgeXTData/";
+constexpr const char *androidAssetStampFile = "surge-xt-assets-version.txt";
+
+juce::File getAndroidAppFilesDirectory()
+{
+    if (auto *home = std::getenv("HOME"); home != nullptr && home[0] != 0)
+        return juce::File(home);
+
+    return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("files");
+}
+
+juce::String readZipEntryText(juce::ZipFile &zip, const juce::String &entryName)
+{
+    if (auto *entry = zip.getEntry(entryName, true); entry != nullptr)
+    {
+        if (auto stream = std::unique_ptr<juce::InputStream>(zip.createStreamForEntry(*entry)))
+            return stream->readEntireStreamAsString().trim();
+    }
+
+    return {};
+}
+
+void extractBundledSurgeDataIfNeeded()
+{
+    auto apkFile = juce::File::getSpecialLocation(juce::File::invokedExecutableFile);
+    juce::ZipFile apk(apkFile);
+
+    auto dataPath = getAndroidAppFilesDirectory().getChildFile("SurgeXTData");
+    auto stampFile = dataPath.getChildFile(androidAssetStampFile);
+    auto bundledStamp =
+        readZipEntryText(apk, juce::String(androidSurgeDataAssetPrefix) + androidAssetStampFile);
+    auto installedStamp = stampFile.existsAsFile() ? stampFile.loadFileAsString().trim()
+                                                   : juce::String{};
+    auto hasFactoryData = dataPath.getChildFile("patches_factory").isDirectory();
+
+    if (bundledStamp.isNotEmpty())
+    {
+        if (installedStamp == bundledStamp && hasFactoryData)
+            return;
+    }
+    else if (hasFactoryData)
+    {
+        return;
+    }
+
+    if (dataPath.exists())
+        dataPath.deleteRecursively();
+
+    dataPath.createDirectory();
+
+    for (int i = 0; i < apk.getNumEntries(); ++i)
+    {
+        auto *entry = apk.getEntry(i);
+        if (entry == nullptr || !entry->filename.startsWith(androidSurgeDataAssetPrefix))
+            continue;
+
+        auto relativePath =
+            entry->filename.fromFirstOccurrenceOf(androidSurgeDataAssetPrefix, false, false);
+        if (relativePath.isEmpty() || relativePath.startsWithChar('/') ||
+            relativePath.contains(".."))
+            continue;
+
+        auto targetFile = dataPath.getChildFile(relativePath);
+        if (entry->filename.endsWithChar('/'))
+        {
+            targetFile.createDirectory();
+            continue;
+        }
+
+        targetFile.getParentDirectory().createDirectory();
+        if (auto inStream = std::unique_ptr<juce::InputStream>(apk.createStreamForEntry(*entry)))
+        {
+            juce::FileOutputStream outStream(targetFile);
+            if (outStream.openedOk())
+            {
+                outStream.writeFromInputStream(*inStream, -1);
+                outStream.flush();
+            }
+        }
+    }
+
+    if (bundledStamp.isNotEmpty())
+        stampFile.replaceWithText(bundledStamp + "\n");
+}
+} // namespace
+#endif
+
 void disableFeedbackLoopMute(juce::StandalonePluginHolder &holder)
 {
     holder.processorHasPotentialFeedbackLoop = false;
@@ -547,7 +640,12 @@ class StandaloneApp final : public juce::JUCEApplication
             false;
 #endif
 
-#ifdef JucePlugin_PreferredChannelConfigurations
+#if JUCE_ANDROID
+        // Surge XT is a synth on mobile, so avoid requesting microphone permission.
+        constexpr juce::StandalonePluginHolder::PluginInOuts channels[]{{0, 2}};
+        const juce::Array<juce::StandalonePluginHolder::PluginInOuts> channelConfig(
+            channels, juce::numElementsInArray(channels));
+#elif defined(JucePlugin_PreferredChannelConfigurations)
         constexpr juce::StandalonePluginHolder::PluginInOuts channels[]{
             JucePlugin_PreferredChannelConfigurations};
         const juce::Array<juce::StandalonePluginHolder::PluginInOuts> channelConfig(
@@ -563,6 +661,10 @@ class StandaloneApp final : public juce::JUCEApplication
 
     void initialise(const juce::String &) override
     {
+#if JUCE_ANDROID
+        extractBundledSurgeDataIfNeeded();
+#endif
+
         // Lock to landscape on all iOS devices (iPhone and iPad).
         juce::Desktop::getInstance().setOrientationsEnabled(juce::Desktop::rotatedClockwise |
                                                             juce::Desktop::rotatedAntiClockwise);
@@ -623,9 +725,31 @@ class StandaloneApp final : public juce::JUCEApplication
 } // namespace Standalone
 } // namespace Surge
 
-START_JUCE_APPLICATION(Surge::Standalone::iOS::StandaloneApp)
+//==============================================================================
+// Native JNI implementations to satisfy JuceActivity.java without patching JUCE
+#if JUCE_ANDROID
+#include <jni.h>
+extern "C" {
+    JNIEXPORT void JNICALL Java_com_rmsl_juce_JuceActivity_appNewIntent(JNIEnv*, jobject, jobject) {
+        // Surge does not use push notifications
+    }
+    
+    JNIEXPORT void JNICALL Java_com_rmsl_juce_JuceActivity_appOnResume(JNIEnv*, jobject) {
+        // Surge does not use in-app purchases
+    }
+}
+#endif
 
-#if JucePlugin_Build_Standalone && JUCE_IOS
+#if JUCE_ANDROID
+extern "C" __attribute__ ((visibility ("default"))) juce::JUCEApplicationBase* juce_CreateApplication()
+{
+    return new Surge::Standalone::iOS::StandaloneApp();
+}
+#else
+START_JUCE_APPLICATION(Surge::Standalone::iOS::StandaloneApp)
+#endif
+
+#if JucePlugin_Build_Standalone && (JUCE_IOS || JUCE_ANDROID)
 
 JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE("-Wmissing-prototypes")
 
