@@ -99,4 +99,6 @@ if(SURGE_BUILD_CLAP)
       "free and open source")
 endif()
 
-surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+  surge_juce_package(${PROJECT_NAME} "Surge XT Effects")
+endif()

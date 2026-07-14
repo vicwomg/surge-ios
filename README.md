@@ -1,29 +1,29 @@
-# Surge IOS Port
+# Surge iOS & Android Ports
 
-This is an unofficial iOS Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with iOS and required a few tweaks to get it working properly on touch screen iPad and iPhone layouts.
+This is an unofficial iOS & Android Port of Surge XT. Since Surge is built on JUCE, it has very good compatibility with mobile platforms and required a few tweaks to get it working properly on touch screens.
 
-**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store, so sideloading methods like building from source or Sidestore / Alt Store (and all their inconveniences) are the only way to install it to your device. Don't ask me or the Surge team an App Store release. It will probably never happen.
+**Please note** I am not affililated with the Surge Synth Team in any way. Surge XT's GPLv3 licensing prohibits distribution in any kind of App Store or Google Play Store.
 
 The main work done to make this functional:
 
-- Add iOS handling to the cmake system and incompatible libraries (luajit)
-- Handle factory presets bundling with the app
-- Handle persistent storage of user settings and patches to "On My iPhone > Surge XT"
-- Expose JUCE audio "Options" button to iOS UI layer
+- Add iOS/Android handling to the cmake system and incompatible libraries (luajit)
+- Handle factory presets bundling and APK zip extraction for Android
+- Handle persistent storage of user settings and patches to mobile app data paths
+- Expose JUCE audio "Options" button to mobile UI layer
 
 Beyond that, there were some quality of life enhancements:
 
 - Allow right-click via two-finger click (tap + hold on the control, then tap with a second finger)
 - Allow sub menu access: Surge > Menu > sub-menus can be opened by tap + hold + drag
 - Force landscape mode, handle proper zooming to fit screen
-- Implement touch scrolling, zoom -/+, and "fit to screen" to cram the extensive UI in smaller screens (iPad is usable best-fit, iPhone needs scrolling)
+- Implement touch scrolling, zoom -/+, and "fit to screen" to cram the extensive UI in smaller screens (iPad/Tablets are usable best-fit, Phones need scrolling)
 - Fix some issues rendering the Virtual Keyboard
 - Keep screen on while app is running
 
-I find that Surge runs excellently on even my 2018 iPad 6th generation. The basic functionality is there to do what I need to do with Surge: play the synth, control it with a physical MPE MIDI controller, adjust parameters, add effects, and load/import patches (just airdrop them into "On My iPhone > Surge XT > Surge Synth Team > Surge XT > Patches"). However, Surge's feature set is huge and there are probably a lot of corner cases and potential bugs I'm not considering.
+For devs:
+**iOS Build Instructions:** Xcode build instructions are included in the original documentation below. The `.ipa` file can be generated with `create_ipa_build.sh`.
 
-For devs: Xcode build instructions are included in the original documentation below.
-The .ipa file is hosted in the releases section of this repo.
+**Android Build Instructions:** See [Building for Android](#building-for-android).
 
 # Surge XT
 
@@ -272,6 +272,49 @@ To build a fat binary on a Mac, simply add the following CMake argument to your 
 ```
 -D"CMAKE_OSX_ARCHITECTURES=arm64;x86_64"
 ```
+
+### Building for Android
+
+Surge XT can be compiled as a standalone Android app from the checked-in Android Studio project in `android/`. Open that
+directory as the Android Studio project, not the repository root.
+
+To get started on a fresh clone:
+
+1. Install Android Studio.
+2. In Android Studio's SDK Manager, install Android SDK Platform 36.1, CMake, and NDK `28.2.13676358`.
+3. Make sure Java 21 is available. The Gradle project includes a daemon toolchain configuration for Java 21, but Android Studio can also provide a compatible JDK.
+4. Run `git submodule update --init --recursive` from the repository root.
+5. Open `android/` in Android Studio and let Gradle sync.
+6. Build or run the `app` configuration on an arm64 Android device or arm64 emulator.
+
+To build from the command line, use either the repository helper:
+
+```bash
+./create_apk_build.sh
+```
+
+or run Gradle directly:
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+./gradlew :app:assembleRelease
+```
+
+The APKs are written to:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+android/app/build/outputs/apk/release/app-release.apk
+```
+
+The Android project builds the `surge-xt_Standalone` CMake target for `arm64-v8a` only. During the Gradle build,
+`resources/data` is staged into generated Android assets and stamped with a content hash, so you do not need to copy
+factory presets into `android/app/src/main/assets` by hand. On first launch, and whenever the asset stamp changes, the app
+extracts the bundled Surge data into its private app files directory.
+
+The release build is currently configured for local testing and debug signing. For distribution outside a local device or
+emulator install, replace that with a real Android signing configuration.
 
 ### Building for iOS
 

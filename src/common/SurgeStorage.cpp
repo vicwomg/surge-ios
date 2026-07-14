@@ -36,6 +36,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <cstdlib>
 
 #include "UserDefaults.h"
 #include "version.h"
@@ -192,7 +193,16 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : oth
     std::string sxt = "Surge XT";
     std::string sxtlower = "surge-xt";
 
-#if MAC && (TARGET_OS_IPHONE || TARGET_OS_IOS)
+#if defined(__ANDROID__)
+    auto androidFilesPath = []() -> fs::path {
+        if (auto *home = std::getenv("HOME"); home && home[0])
+            return fs::path{home};
+
+        return fs::temp_directory_path();
+    }();
+
+    localAppDataPath = androidFilesPath / ".local" / "share" / "Surge Synth Team" / "Surge XT";
+#elif MAC && (TARGET_OS_IPHONE || TARGET_OS_IOS)
     // iOS does not expose the macOS-style Application Support locations in the way Surge expects.
     localAppDataPath =
         sst::plugininfra::paths::bestDocumentsVendorFolderPathFor("Surge Synth Team", "Surge XT");
@@ -250,6 +260,22 @@ SurgeStorage::SurgeStorage(const SurgeStorage::SurgeStorageConfig &config) : oth
     // userDataPath = fs::path{"/good/luck/bozo"};
     // userDataPath = fs::path{"/usr/sbin"};
 #endif
+#elif defined(__ANDROID__)
+    if (!hasSuppliedDataPath)
+    {
+        // The APK extraction script places the data in the app's internal files directory under "SurgeXTData".
+        // JuceActivity sets HOME to that directory before native startup; androidFilesPath falls back defensively.
+        datapath = androidFilesPath / "SurgeXTData";
+    }
+    else
+    {
+        datapath = fs::path{suppliedDataPath};
+    }
+
+    if (userDataPath.empty())
+    {
+        userDataPath = androidFilesPath / ".Surge Synth Team" / sxt;
+    }
 #elif LINUX
     const auto installPath = sst::plugininfra::paths::sharedLibraryBinaryPath().parent_path();
 

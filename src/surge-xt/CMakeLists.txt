@@ -255,7 +255,7 @@ target_include_directories(${PROJECT_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
   add_subdirectory(cli)
 endif()
 
@@ -275,27 +275,31 @@ if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
   )
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
   if(TARGET ${PROJECT_NAME}_Standalone)
-    target_sources(${PROJECT_NAME}_Standalone PRIVATE SurgeStandaloneApp_ios.cpp)
+    target_sources(${PROJECT_NAME}_Standalone PRIVATE SurgeStandaloneApp_mobile.cpp)
     target_compile_definitions(${PROJECT_NAME}_Standalone PRIVATE JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1)
   endif()
 
-  foreach(fmt Standalone AUv3)
-    if(TARGET ${PROJECT_NAME}_${fmt})
-      add_custom_command(
-        TARGET ${PROJECT_NAME}_${fmt}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-          "${CMAKE_SOURCE_DIR}/resources/data"
-          "$<TARGET_BUNDLE_CONTENT_DIR:${PROJECT_NAME}_${fmt}>/SurgeXTData"
-      )
-    endif()
-  endforeach()
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+    foreach(fmt Standalone AUv3)
+      if(TARGET ${PROJECT_NAME}_${fmt})
+        add_custom_command(
+          TARGET ${PROJECT_NAME}_${fmt}
+          POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/resources/data"
+            "$<TARGET_BUNDLE_CONTENT_DIR:${PROJECT_NAME}_${fmt}>/SurgeXTData"
+        )
+      endif()
+    endforeach()
+  endif()
 endif()
 
-surge_juce_package(${PROJECT_NAME} "Surge XT")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+  surge_juce_package(${PROJECT_NAME} "Surge XT")
+endif()
 
-if (${SURGE_BUILD_TESTRUNNER})
+if (${SURGE_BUILD_TESTRUNNER} AND NOT ANDROID)
   add_subdirectory(xt-tests)
 endif()

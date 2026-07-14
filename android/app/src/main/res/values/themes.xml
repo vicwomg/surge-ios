@@ -1,0 +1,5 @@
+<resources>
+    <style name="Base.Theme.SurgeXT" parent="@android:style/Theme.Material.NoActionBar" />
+
+    <style name="Theme.SurgeXT" parent="Base.Theme.SurgeXT" />
+</resources>
